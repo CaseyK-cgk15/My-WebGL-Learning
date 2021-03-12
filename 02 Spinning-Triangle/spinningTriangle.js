@@ -5,16 +5,61 @@
     let gl;
     WebGLSetup();
 
-    // grab shader source code
-    const vertexShaderSource = document.querySelector("#vertex-shader-3d").text;
-    const fragmentShaderSource = document.querySelector("#fragment-shader-3d").text;
+    /**
+     * *********************************************
+     *     ---= Create Shaders & Program =---
+     * *********************************************
+     */
+
+    // Vertex Shader
+    const vertexShaderSourceCode = 
+    `    
+    precision mediump float;       
+            
+    // an attribute will receive data from a buffer
+    attribute vec4 position;
+    attribute vec3 color;
+    varying vec3 vColor;
+   
+    // all shaders have a main function
+    void main() {
+   
+        vColor = color;
+
+        // gl_Position is a special variable a vertex shader
+        // is responsible for setting
+        gl_Position = position;
+    }
+
+    `
+
+    // Fragment Shader
+    const fragmentShaderSourceCode =
+    `
+
+    // set precision
+    precision mediump float;
+
+    varying vec3 vColor;
+   
+    void main() {
+      // gl_FragColor is a special variable a fragment shader
+      // is responsible for setting
+      gl_FragColor = vec4(vColor, 1); // return reddish-purple
+    }
+   
+    `
     // create shaders
-    const vertexShader = myWebGLHelper_createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = myWebGLHelper_createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const vertexShader = myWebGLHelper_createShader(gl, gl.VERTEX_SHADER, vertexShaderSourceCode);
+    const fragmentShader = myWebGLHelper_createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSourceCode);
     // create program
     const program = myWebGLHelper_createProgram(gl, vertexShader, fragmentShader);
 
-    // ---= Buffers, Data, Attribute Locations =---
+    /**
+     * *********************************************
+     * ---= Buffers, Data, Attribute Locations =---
+     * *********************************************
+     */
     
     // get attribute location
     const positionAttribLocation = gl.getAttribLocation(program, "position");

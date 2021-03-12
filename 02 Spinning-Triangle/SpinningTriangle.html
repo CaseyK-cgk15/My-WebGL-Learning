@@ -3,43 +3,6 @@
     <head>
         <meta charset="UTF-8" />
         <title>Spinning Triangle</title>
-
-        <script id="vertex-shader-3d" type="notjs">
-     
-            precision mediump float;       
-            
-            // an attribute will receive data from a buffer
-            attribute vec4 position;
-            attribute vec3 color;
-            varying vec3 vColor;
-           
-            // all shaders have a main function
-            void main() {
-           
-                vColor = color;
-
-                // gl_Position is a special variable a vertex shader
-                // is responsible for setting
-                gl_Position = position;
-            }
-           
-        </script>
-           
-        <script id="fragment-shader-3d" type="notjs">
-           
-            // set precision
-            precision mediump float;
-
-            varying vec3 vColor;
-           
-            void main() {
-              // gl_FragColor is a special variable a fragment shader
-              // is responsible for setting
-              gl_FragColor = vec4(vColor, 1); // return reddish-purple
-            }
-           
-        </script>
-
         <script type="text/javascript" src="myWebGLHelper.js" defer></script>
         <script type="text/javascript" src="spinningTriangle.js" defer></script>
 
