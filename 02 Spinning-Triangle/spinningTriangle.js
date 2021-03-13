@@ -1,6 +1,8 @@
 "use strict";
 
 {
+    const mat4 = glMatrix.mat4;
+
     // setup Canvas and WebGLRenderingContext (gl)
     let gl;
     WebGLSetup();
@@ -20,6 +22,8 @@
     attribute vec4 position;
     attribute vec3 color;
     varying vec3 vColor;
+
+    uniform mat4 GLSLmatrix;
    
     // all shaders have a main function
     void main() {
@@ -28,7 +32,7 @@
 
         // gl_Position is a special variable a vertex shader
         // is responsible for setting
-        gl_Position = position;
+        gl_Position = GLSLmatrix * position;
     }
 
     `
@@ -90,6 +94,17 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);    
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colorData), gl.STATIC_DRAW);
 
+    // Matrix & Transformations
+    const myMatrix = mat4.create(); // create identity matrix
+    // transformations are done in reverse order of code
+    // these transformations will be performed in order of rotate->scale->translate
+    // do rotation/scale BEFORE translate (after in code)
+    mat4.translate(myMatrix, myMatrix, [.2, .5, 0]);
+    mat4.scale(myMatrix, myMatrix, [0.25, 0.25, 0.25]);
+    // rotate moved to render()
+    //mat4.rotateZ(myMatrix, myMatrix, Math.PI/2); // rotate in radians, this is 90 degrees
+    console.log(myMatrix); // displays array of data in console (for debugging purposes, not needed)
+
     render();
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -108,6 +123,9 @@
 
     function render()
     {
+        // Animate
+        requestAnimationFrame(render); // parameter is name of function it's in
+
         /*
         *   [Resizing Canvas code would go here]
         */
@@ -143,6 +161,14 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.vertexAttribPointer(
             colorAttribLocation, size, type, normalize, stride, offset)
+
+        // Matrix Locations
+        const uniformLocations =
+        {
+            matrix: gl.getUniformLocation(program, "GLSLmatrix"),
+        };
+        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /70);
+        gl.uniformMatrix4fv(uniformLocations.matrix, false, myMatrix);
 
         // Ask WebGL to execute GLSL program
         var primitiveType = gl.TRIANGLES;
