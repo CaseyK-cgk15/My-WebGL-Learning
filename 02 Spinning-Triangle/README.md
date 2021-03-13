@@ -6,4 +6,4 @@
 - main.css - Basic CSS file for canvas border
 - spinningTriangle.js - JavaScript WebGL program
 - myWebGLHelper.js - functions to handle creating shaders and program (given source code)
-- gl-matrix-min.js - a Matrix and Vector library from [glMatrix](https://glmatrix.net/)
+- J3DI.js - a Matrix and Vector library from [khronos](https://github.com/KhronosGroup/WebGL/blob/master/sdk/demos/webkit/resources/J3DI.js)
