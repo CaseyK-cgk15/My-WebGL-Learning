@@ -1,4 +1,4 @@
-# Spinning Triangle
+# Multicolor 3D Box
 [Description]
 
 [glMatrix](https://glmatrix.net/), a Matrix/Vector library, is included to make working with matricies easier.
