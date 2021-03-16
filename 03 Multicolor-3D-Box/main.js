@@ -20,8 +20,8 @@
             
     // an attribute will receive data from a buffer
     attribute vec4 position;
-    attribute vec3 color;
-    varying vec3 vColor;
+    attribute vec4 color;
+    varying vec4 vColor;
 
     uniform mat4 GLSLmatrix;
    
@@ -44,43 +44,96 @@
     // set precision
     precision mediump float;
 
-    varying vec3 vColor;
+    varying vec4 vColor;
    
     void main() {
       // gl_FragColor is a special variable a fragment shader
       // is responsible for setting
-      gl_FragColor = vec4(vColor, 1); // return reddish-purple
+      gl_FragColor = vColor;
     }
    
     `
-    // create shaders
-    const vertexShader = myWebGLHelper_createShader(gl, gl.VERTEX_SHADER, vertexShaderSourceCode);
-    const fragmentShader = myWebGLHelper_createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSourceCode);
     // create program
-    const program = myWebGLHelper_createProgram(gl, vertexShader, fragmentShader);
+    const program = myWebGLHelper_createProgramFromSource(gl, vertexShaderSourceCode, fragmentShaderSourceCode);
 
     /**
      * *********************************************
      * ---= Buffers, Data, Attribute Locations =---
      * *********************************************
      */
+
+    // cube
+    const vertexData = [
+        // Front face
+        -1.0, -1.0,  1.0,
+         1.0, -1.0,  1.0,
+         1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+      
+        // Back face
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0, -1.0, -1.0,
+      
+        // Top face
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0, -1.0,
+      
+        // Bottom face
+        -1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
+      
+        // Right face
+         1.0, -1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0,  1.0,  1.0,
+         1.0, -1.0,  1.0,
+      
+        // Left face
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0,
+      ];
+      
+    const faceColors = [
+        [0.2,  0.2,  0.2,  1.0],    // Front face: grey
+        [1.0,  0.0,  0.0,  1.0],    // Back face: red
+        [0.0,  1.0,  0.0,  1.0],    // Top face: green
+        [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
+        [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
+        [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+    ];
+
+    // Convert the array of colors into a table for all the vertices.
+
+    let colorData = [];
+
+    for (var j = 0; j < faceColors.length; ++j)
+    {
+        const c = faceColors[j];
+
+        // Repeat each color four times for the four vertices of the face
+        colorData = colorData.concat(c, c, c, c);
+    }
     
+    const indices = [
+        0,  1,  2,      0,  2,  3,    // front
+        4,  5,  6,      4,  6,  7,    // back
+        8,  9,  10,     8,  10, 11,   // top
+        12, 13, 14,     12, 14, 15,   // bottom
+        16, 17, 18,     16, 18, 19,   // right
+        20, 21, 22,     20, 22, 23,   // left
+    ];
+
     // get attribute location
     const positionAttribLocation = gl.getAttribLocation(program, "position");
     const colorAttribLocation = gl.getAttribLocation(program, "color");
-
-    // three 3d points
-    const vertexData = [
-        0, 1, 0,
-        1, -1, 0,
-        -1, -1, 0,
-        ];
-
-    const colorData = [
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1,
-    ];
 
     // create & bind buffer, load data into buffer
 
@@ -94,16 +147,21 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);    
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colorData), gl.STATIC_DRAW);
 
+    // create the buffer
+    const indexBuffer = gl.createBuffer();
+    // make this buffer the current 'ELEMENT_ARRAY_BUFFER'
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
     // Matrix & Transformations
     const myMatrix = mat4.create(); // create identity matrix
     // transformations are done in reverse order of code
-    // these transformations will be performed in order of rotate->scale->translate
-    // do rotation/scale BEFORE translate (after in code)
-    mat4.translate(myMatrix, myMatrix, [.2, .5, 0]);
-    mat4.scale(myMatrix, myMatrix, [0.25, 0.25, 0.25]);
-    // rotate moved to render()
-    //mat4.rotateZ(myMatrix, myMatrix, Math.PI/2); // rotate in radians, this is 90 degrees
-    console.log(myMatrix); // displays array of data in console (for debugging purposes, not needed)
+    mat4.scale(myMatrix, myMatrix, [0.4, 0.4, 0.4]);
+    //console.log(myMatrix); // for debugging
+
+    mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /2);
+    mat4.rotateY(myMatrix, myMatrix, Math.PI/2 /2);
+    mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /2);
 
     render();
 
@@ -141,7 +199,8 @@
         gl.useProgram(program);
 
         // attrib pointer vars
-        let size = 3;          // 3 components per iteration
+        let vSize = 3;          // 3 components per iteration
+        let cSize = 4;          // 4 components per iteration
         var type = gl.FLOAT;   // the data is 32bit floats
         var normalize = false; // don't normalize the data
         var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
@@ -152,28 +211,37 @@
         gl.enableVertexAttribArray(positionAttribLocation);
         // Bind the position buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); 
+
+        // bind the buffer containing the indices
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
         // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
         gl.vertexAttribPointer(
-            positionAttribLocation, size, type, normalize, stride, offset)
+            positionAttribLocation, vSize, type, normalize, stride, offset)
 
         // color
         gl.enableVertexAttribArray(colorAttribLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.vertexAttribPointer(
-            colorAttribLocation, size, type, normalize, stride, offset)
+            colorAttribLocation, 4, type, normalize, stride, offset)
 
         // Matrix Locations
         const uniformLocations =
         {
             matrix: gl.getUniformLocation(program, "GLSLmatrix"),
         };
-        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /70);
+        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
+        mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);
         gl.uniformMatrix4fv(uniformLocations.matrix, false, myMatrix);
 
         // Ask WebGL to execute GLSL program
         var primitiveType = gl.TRIANGLES;
         var offset = 0;
-        var count = 3;
-        gl.drawArrays(primitiveType, offset, count);
+        //var count = vertexData.length / 3;
+        var count = 36 // 6 verticies per face * 6 faces
+        gl.enable(gl.DEPTH_TEST);
+        //gl.drawArrays(primitiveType, offset, count);
+        var indexType = gl.UNSIGNED_SHORT;
+        gl.drawElements(primitiveType, count, indexType, offset);
     };
 }
