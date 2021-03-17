@@ -7,7 +7,7 @@ const myWebGL =
 {
 
     // Setup WebGLRenderingContext (gl)
-    glSetup: (canvas) =>
+    glSetup: function(canvas) 
     {
         // do "document.querySelector('canvas')" for canvas argument
 
@@ -31,7 +31,7 @@ const myWebGL =
     // gl is WebGLRenderingContext object
     // type is gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
     // source is source code in form of a string
-    createShader: (gl, type, source) => 
+    createShader: function(gl, type, source) 
     {
         let shader = gl.createShader(type);
         gl.shaderSource(shader, source);
@@ -50,7 +50,7 @@ const myWebGL =
     // createProgram()
     // creates WebGL program from vertexShader and fragmentShader
     // gl is WebGLRenderingContext object
-    createProgram: (gl, vertexShader, fragmentShader) =>
+    createProgram: function(gl, vertexShader, fragmentShader)
     {
         let program = gl.createProgram();
         gl.attachShader(program, vertexShader);
@@ -70,7 +70,7 @@ const myWebGL =
     // createProgramFromSource()
     // runs createShader() and createProgram() and returns program
     // gl is WebGLRenderingContext object
-    createProgramFromSource: (gl, vertexSourceCode, fragmentSourceCode) =>
+    createProgramFromSource: function(gl, vertexSourceCode, fragmentSourceCode)
     {
         const vertexShader = myWebGL.createShader(gl, gl.VERTEX_SHADER, vertexSourceCode);
         const fragmentShader = myWebGL.createShader(gl, gl.FRAGMENT_SHADER, fragmentSourceCode);
@@ -91,7 +91,7 @@ const myWebGL =
     {
         return [Math.random(), Math.random(), Math.random()];
     },
-}
+} // end namespace/object
 
 // creates array of 6 vertices to make 2 triangles that make a square
 // creates square face in the XY plane
