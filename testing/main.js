@@ -1,11 +1,11 @@
 "use strict";
 
+const ROTATING = true;
+
 {
     const mat4 = glMatrix.mat4;
 
-    // setup Canvas and WebGLRenderingContext (gl)
-    let gl;
-    WebGLSetup();
+    let gl = myWebGL.glSetup(document.querySelector('canvas'));
 
     /**
      * *********************************************
@@ -16,22 +16,22 @@
     // Vertex Shader
     const vertexShaderSourceCode = 
     `    
-    precision mediump float;       
+    precision mediump float;
             
     // an attribute will receive data from a buffer
     attribute vec4 position;
     attribute vec4 color;
+
     varying vec4 vColor;
 
     uniform mat4 GLSLmatrix;
    
     // all shaders have a main function
     void main() {
-   
+       
         vColor = color;
 
-        // gl_Position is a special variable a vertex shader
-        // is responsible for setting
+        // gl_Position is a special variable a vertex shader is responsible for setting
         gl_Position = GLSLmatrix * position;
     }
 
@@ -47,14 +47,14 @@
     varying vec4 vColor;
    
     void main() {
-      // gl_FragColor is a special variable a fragment shader
-      // is responsible for setting
+      
+      // gl_FragColor is a special variable a fragment shader is responsible for setting
       gl_FragColor = vColor;
     }
    
     `
     // create program
-    const program = myWebGLHelper_createProgramFromSource(gl, vertexShaderSourceCode, fragmentShaderSourceCode);
+    const program = myWebGL.createProgramFromSource(gl, vertexShaderSourceCode, fragmentShaderSourceCode);
 
     /**
      * *********************************************
@@ -155,29 +155,25 @@
 
     // Matrix & Transformations
     const myMatrix = mat4.create(); // create identity matrix
+    const projectionMatrix = mat4.create();
+
     // transformations are done in reverse order of code
-    mat4.scale(myMatrix, myMatrix, [0.4, 0.4, 0.4]);
+    mat4.scale(myMatrix, myMatrix, [0.2, 0.2, 0.2]);
     //console.log(myMatrix); // for debugging
 
     mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /2);
     mat4.rotateY(myMatrix, myMatrix, Math.PI/2 /2);
     mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /2);
 
+    const uniformLocations =
+    {
+        matrix: gl.getUniformLocation(program, "GLSLmatrix"),
+        
+    };
+
     render();
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-    function WebGLSetup()
-    {
-        // Setup Canvas and WebGLRenderingContext (gl)
-        var canvas = document.querySelector('canvas');
-        gl = canvas.getContext('webgl');
-        // throw error if WebGL not supported
-        if (!gl) 
-        {
-            alert( "WebGL isn't available" );
-        }
-    };
 
     function render()
     {
@@ -201,47 +197,48 @@
         // attrib pointer vars
         let vSize = 3;          // 3 components per iteration
         let cSize = 4;          // 4 components per iteration
-        var type = gl.FLOAT;   // the data is 32bit floats
-        var normalize = false; // don't normalize the data
-        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-        var offset = 0;        // start at the beginning of the buffer
+        let type = gl.FLOAT;   // the data is 32bit floats
+        let normalize = false; // don't normalize the data
+        let stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+        let offset = 0;        // start at the beginning of the buffer
 
         // position
         // Enable Attributes
         gl.enableVertexAttribArray(positionAttribLocation);
         // Bind the position buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); 
-
         // bind the buffer containing the indices
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
         // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
         gl.vertexAttribPointer(
-            positionAttribLocation, vSize, type, normalize, stride, offset)
+            positionAttribLocation, vSize, type, normalize, stride, offset);
 
         // color
         gl.enableVertexAttribArray(colorAttribLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.vertexAttribPointer(
-            colorAttribLocation, 4, type, normalize, stride, offset)
+            colorAttribLocation, 4, type, normalize, stride, offset);
 
         // Matrix Locations
-        const uniformLocations =
+        if (ROTATING)
         {
-            matrix: gl.getUniformLocation(program, "GLSLmatrix"),
-        };
-        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
-        mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);
+            mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
+            mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);    
+        }
+
         gl.uniformMatrix4fv(uniformLocations.matrix, false, myMatrix);
 
         // Ask WebGL to execute GLSL program
-        var primitiveType = gl.TRIANGLES;
-        var offset = 0;
+        let primitiveType = gl.TRIANGLES;
+        let drawOffset = 0;
         //var count = vertexData.length / 3;
-        var count = 36 // 6 verticies per face * 6 faces
+        let count = 36 // 6 verticies per face * 6 faces
+        let indexType = gl.UNSIGNED_SHORT;
+
         gl.enable(gl.DEPTH_TEST);
-        //gl.drawArrays(primitiveType, offset, count);
-        var indexType = gl.UNSIGNED_SHORT;
-        gl.drawElements(primitiveType, count, indexType, offset);
+        //gl.enable(gl.CULL_FACE);
+
+        gl.drawElements(primitiveType, count, indexType, drawOffset);
     };
 }
