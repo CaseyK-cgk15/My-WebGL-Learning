@@ -1,6 +1,10 @@
 "use strict";
 
-const ROTATING = true;
+const OPTIONS =
+{
+    Rotating: false,
+    Isometric_View: true,
+}
 
 {
     const mat4 = glMatrix.mat4;
@@ -105,21 +109,21 @@ const ROTATING = true;
 
     // create the buffer
     const indexBuffer = gl.createBuffer();
-    // make this buffer the current 'ELEMENT_ARRAY_BUFFER'
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
     // Matrix & Transformations
     const myMatrix = mat4.create(); // create identity matrix
-    const projectionMatrix = mat4.create();
 
     // transformations are done in reverse order of code
     mat4.scale(myMatrix, myMatrix, [0.2, 0.2, 0.2]);
-    //console.log(myMatrix); // for debugging
 
-    mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /2);
-    mat4.rotateY(myMatrix, myMatrix, Math.PI/2 /2);
-    mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /2);
+    if (OPTIONS.Isometric_View)
+    {
+        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /2);
+        mat4.rotateY(myMatrix, myMatrix, Math.PI/2 /2);
+        mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /2);            
+    }
 
     const uniformLocations =
     {
@@ -177,7 +181,7 @@ const ROTATING = true;
             colorAttribLocation, 4, type, normalize, stride, offset);
 
         // Matrix Locations
-        if (ROTATING)
+        if (OPTIONS.Rotating)
         {
             mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
             mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);    
