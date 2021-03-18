@@ -1,5 +1,5 @@
 // myWebGLHelper.js
-// version 1.1.1
+// version 2.0.0
 // author Casey Koepp
 // gl = WebGLRenderingContext object
 
@@ -42,7 +42,13 @@ const myWebGL =
           return shader;
         }
        
-        alert( "Failed to Create Shader" );
+        if (type == gl.VERTEX_SHADER)
+        { alert( "Failed to Create Vertex Shader" ); }
+        else if ( type == gl.FRAGMENT_SHADER)
+        { alert( "Failed to Create Fragment Shader" ); }
+        else
+        { alert( "Failed to Create Unknown Shader" ); }
+
         console.log(gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
     },
@@ -77,6 +83,36 @@ const myWebGL =
         const program = myWebGL.createProgram(gl, vertexShader, fragmentShader);
     
         return program;
+    },
+
+//-------------
+
+    // setupAttribLocation()
+    // creates/gets location of attribute
+    setupAttribLocation: function(gl, program, attributeObj, GLSL_attributeName)
+    {
+        attributeObj.location = gl.getAttribLocation(program, GLSL_attributeName);
+    },
+
+    // setupAttribBuffer()
+    // creates buffer, binds buffer, loads buffer data
+    // uses object that holds attribute objects
+    // uses "buffer" and "bufferData" inside attribute object
+    setupAttribBuffer: function(gl, attributeObj, drawOption)
+    {
+        attributeObj.buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, attributeObj.buffer);    
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(attributeObj.bufferData), drawOption);
+    },
+
+    // attribEnableBind()
+    // enables and binds attribute given attribute object with "location" & "buffer"
+    attribEnableBind: function(gl, attributeObj)
+    {
+        // Enable Attributes
+        gl.enableVertexAttribArray(attributeObj.location);
+        // Bind the position buffer.
+        gl.bindBuffer(gl.ARRAY_BUFFER, attributeObj.buffer);
     },
 
 /**

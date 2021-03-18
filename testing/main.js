@@ -9,7 +9,9 @@ const OPTIONS =
 {
     const mat4 = glMatrix.mat4;
 
-    let gl = myWebGL.glSetup(document.querySelector('canvas'));
+    let canvas = document.querySelector('canvas');
+    let gl = myWebGL.glSetup(canvas);
+    //let gl = WebGLUtils.setupWebGL(canvas);
 
     /**
      * *********************************************
@@ -23,20 +25,20 @@ const OPTIONS =
     precision mediump float;
             
     // an attribute will receive data from a buffer
-    attribute vec4 position;
-    attribute vec4 color;
+    attribute vec4 a_position;
+    attribute vec4 a_color;
 
-    varying vec4 vColor;
+    varying vec4 v_color;
 
-    uniform mat4 GLSLmatrix;
+    uniform mat4 u_GLSLmatrix;
    
     // all shaders have a main function
     void main() {
        
-        vColor = color;
+        v_color = a_color;
 
         // gl_Position is a special variable a vertex shader is responsible for setting
-        gl_Position = GLSLmatrix * position;
+        gl_Position = u_GLSLmatrix * a_position;
     }
 
     `
@@ -48,12 +50,12 @@ const OPTIONS =
     // set precision
     precision mediump float;
 
-    varying vec4 vColor;
+    varying vec4 v_color;
    
     void main() {
       
       // gl_FragColor is a special variable a fragment shader is responsible for setting
-      gl_FragColor = vColor;
+      gl_FragColor = v_color;
     }
    
     `
@@ -62,7 +64,7 @@ const OPTIONS =
 
     /**
      * *********************************************
-     * ---= Buffers, Data, Attribute Locations =---
+     *             ---=    Data     =---
      * *********************************************
      */
 
@@ -91,26 +93,40 @@ const OPTIONS =
     
     const indices = myWebGLData.indexCube01;
 
-    // get attribute location
-    const positionAttribLocation = gl.getAttribLocation(program, "position");
-    const colorAttribLocation = gl.getAttribLocation(program, "color");
+    /**
+     * *********************************************
+     *   ---= Buffers & Attribute Locations =---
+     * *********************************************
+     */
 
-    // create & bind buffer, load data into buffer
+    // Setup all the buffers and attributes
 
-    // positionBuffer
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);    
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexData), gl.STATIC_DRAW);
+    let attribs = 
+    {
+        // attribute: { bufferData: , numComponents, buffer: null, location: null},
+        a_position: { bufferData: vertexData, numComponents: 3, },
+        a_color:   { bufferData: colorData, numComponents: 4, },
+    };
 
-    // colorBuffer
-    const colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);    
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colorData), gl.STATIC_DRAW);
+
+    // a_position
+    myWebGL.setupAttribLocation(gl, program, attribs.a_position, "a_position");
+    myWebGL.setupAttribBuffer(gl, attribs.a_position, gl.STATIC_DRAW);
+    
+    // a_color
+    myWebGL.setupAttribLocation(gl, program, attribs.a_color, "a_color");
+    myWebGL.setupAttribBuffer(gl, attribs.a_color, gl.STATIC_DRAW);
 
     // create the buffer
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    /**
+     * *********************************************
+     *   ---= Matricies & Uniforms =---
+     * *********************************************
+     */
 
     // Matrix & Transformations
     const myMatrix = mat4.create(); // create identity matrix
@@ -127,7 +143,7 @@ const OPTIONS =
 
     const uniformLocations =
     {
-        matrix: gl.getUniformLocation(program, "GLSLmatrix"),
+        matrix: gl.getUniformLocation(program, "u_GLSLmatrix"),
         
     };
 
@@ -163,22 +179,18 @@ const OPTIONS =
         let offset = 0;        // start at the beginning of the buffer
 
         // position
-        // Enable Attributes
-        gl.enableVertexAttribArray(positionAttribLocation);
-        // Bind the position buffer.
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer); 
+        myWebGL.attribEnableBind(gl, attribs.a_position);
         // bind the buffer containing the indices
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
         // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        gl.vertexAttribPointer(
-            positionAttribLocation, vSize, type, normalize, stride, offset);
+        gl.vertexAttribPointer(attribs.a_position.location, 
+            vSize, type, normalize, stride, offset);
 
         // color
-        gl.enableVertexAttribArray(colorAttribLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.vertexAttribPointer(
-            colorAttribLocation, 4, type, normalize, stride, offset);
+        myWebGL.attribEnableBind(gl, attribs.a_color);
+        gl.vertexAttribPointer(attribs.a_color.location,
+            cSize, type, normalize, stride, offset);
 
         // Matrix Locations
         if (OPTIONS.Rotating)
