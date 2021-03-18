@@ -203,7 +203,7 @@ const OPTIONS =
         // Matrix Locations
         if (OPTIONS.Rotating)
         {
-            mat4.rotateZtwgl-full.min(myMatrix, myMatrix, Math.PI/2 /90);
+            mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
             mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);    
         }
 
