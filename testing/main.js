@@ -31,6 +31,7 @@ const OPTIONS =
     varying vec4 v_color;
 
     uniform mat4 u_GLSLmatrix;
+    uniform mat4 u_transMatrix;
    
     // all shaders have a main function
     void main() {
@@ -38,7 +39,7 @@ const OPTIONS =
         v_color = a_color;
 
         // gl_Position is a special variable a vertex shader is responsible for setting
-        gl_Position = u_GLSLmatrix * a_position;
+        gl_Position = u_transMatrix * u_GLSLmatrix * a_position;
     }
 
     `
@@ -122,6 +123,10 @@ const OPTIONS =
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
+    const indexBuffer2 = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
     /**
      * *********************************************
      *   ---= Matricies & Uniforms =---
@@ -136,14 +141,17 @@ const OPTIONS =
 
     if (OPTIONS.Isometric_View)
     {
-        mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /2);
-        mat4.rotateY(myMatrix, myMatrix, Math.PI/2 /2);
-        mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /2);            
+        mat4.rotateZ(myMatrix, myMatrix, Math.PI/4);
+        mat4.rotateY(myMatrix, myMatrix, Math.PI/4);
+        mat4.rotateX(myMatrix, myMatrix, Math.PI/4);            
     }
+
+    let transMatrix = mat4.create(); 
 
     const uniformLocations =
     {
         matrix: gl.getUniformLocation(program, "u_GLSLmatrix"),
+        transMatrix: gl.getUniformLocation(program, "u_transMatrix")
         
     };
 
@@ -195,11 +203,13 @@ const OPTIONS =
         // Matrix Locations
         if (OPTIONS.Rotating)
         {
-            mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
+            mat4.rotateZtwgl-full.min(myMatrix, myMatrix, Math.PI/2 /90);
             mat4.rotateX(myMatrix, myMatrix, Math.PI/2 /70);    
         }
 
         gl.uniformMatrix4fv(uniformLocations.matrix, false, myMatrix);
+        transMatrix = mat4.create();
+        gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
 
         // Ask WebGL to execute GLSL program
         let primitiveType = gl.TRIANGLES;
@@ -212,5 +222,11 @@ const OPTIONS =
         //gl.enable(gl.CULL_FACE);
 
         gl.drawElements(primitiveType, count, indexType, drawOffset);
+
+        mat4.translate(transMatrix, transMatrix, [0.5, 0, 0]);
+        gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
+
+        gl.drawElements(primitiveType, count, indexType, 0);
+
     };
 }
