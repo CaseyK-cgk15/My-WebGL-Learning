@@ -68,8 +68,6 @@ const OPTIONS =
      *             ---=    Data     =---
      * *********************************************
      */
-
-    const vertexData = myWebGLData.vertexCube01;
       
     const faceColors = [
         [0.2,  0.2,  0.2,  1.0],    // Front face: grey
@@ -91,6 +89,18 @@ const OPTIONS =
         // Repeat each color four times for the four vertices of the face
         colorData = colorData.concat(c, c, c, c);
     }
+
+    let colorDataRed = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    {
+        colorDataRed = colorDataRed.concat(faceColors[1]);
+    }
+
+    let colorDataGreen = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    {
+        colorDataGreen = colorDataGreen.concat(faceColors[2]);
+    }
     
     const indices = myWebGLData.indexCube01;
 
@@ -102,31 +112,39 @@ const OPTIONS =
 
     // Setup all the buffers and attributes
 
+    // holds attribute locations
     let attribs = 
     {
-        // attribute: { bufferData: , numComponents, buffer: null, location: null},
-        a_position: { bufferData: vertexData, numComponents: 3, },
-        a_color:   { bufferData: colorData, numComponents: 4, },
+        a_position: gl.getAttribLocation(program, "a_position"),
+        a_color: gl.getAttribLocation(program, "a_color"),
+    };
+    // holds buffers
+    let attribBuffers =
+    {
+        positionCube: gl.createBuffer(),
+        color0: gl.createBuffer(),
+        colorRed: gl.createBuffer(),
+        colorGreen: gl.createBuffer(),
     };
 
 
-    // a_position
-    myWebGL.setupAttribLocation(gl, program, attribs.a_position, "a_position");
-    myWebGL.setupAttribBuffer(gl, attribs.a_position, gl.STATIC_DRAW);
+    // position buffers
+    myWebGL.setupAttribBuffer(gl, attribBuffers.positionCube, myWebGLData.vertexCube01, gl.STATIC_DRAW);
     
-    // a_color
-    myWebGL.setupAttribLocation(gl, program, attribs.a_color, "a_color");
-    myWebGL.setupAttribBuffer(gl, attribs.a_color, gl.STATIC_DRAW);
+    // color buffers
+    myWebGL.setupAttribBuffer(gl, attribBuffers.color0, colorData, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorRed, colorDataRed, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorGreen, colorDataGreen, gl.STATIC_DRAW);
 
     // create the buffer
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
+/*
     const indexBuffer2 = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
+*/
     /**
      * *********************************************
      *   ---= Matricies & Uniforms =---
@@ -187,17 +205,17 @@ const OPTIONS =
         let offset = 0;        // start at the beginning of the buffer
 
         // position
-        myWebGL.attribEnableBind(gl, attribs.a_position);
+        myWebGL.attribEnableBind(gl, attribs.a_position, attribBuffers.positionCube);
         // bind the buffer containing the indices
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
         // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        gl.vertexAttribPointer(attribs.a_position.location, 
+        gl.vertexAttribPointer(attribs.a_position, 
             vSize, type, normalize, stride, offset);
 
         // color
-        myWebGL.attribEnableBind(gl, attribs.a_color);
-        gl.vertexAttribPointer(attribs.a_color.location,
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
+        gl.vertexAttribPointer(attribs.a_color,
             cSize, type, normalize, stride, offset);
 
         // Matrix Locations
@@ -223,10 +241,26 @@ const OPTIONS =
 
         gl.drawElements(primitiveType, count, indexType, drawOffset);
 
+        // color change 
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorGreen);
+        gl.vertexAttribPointer(attribs.a_color,
+            cSize, type, normalize, stride, offset);
+
         mat4.translate(transMatrix, transMatrix, [0.5, 0, 0]);
         gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
-
         gl.drawElements(primitiveType, count, indexType, 0);
+
+        // color change 
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorRed);
+        gl.vertexAttribPointer(attribs.a_color,
+            cSize, type, normalize, stride, offset);
+            
+
+        transMatrix = mat4.create();
+        mat4.translate(transMatrix, transMatrix, [-0.5, 0, 0]);
+        gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
+        gl.drawElements(primitiveType, count, indexType, 0);
+
 
     };
 }

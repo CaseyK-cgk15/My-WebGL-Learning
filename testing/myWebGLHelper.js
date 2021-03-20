@@ -87,32 +87,23 @@ const myWebGL =
 
 //-------------
 
-    // setupAttribLocation()
-    // creates/gets location of attribute
-    setupAttribLocation: function(gl, program, attributeObj, GLSL_attributeName)
-    {
-        attributeObj.location = gl.getAttribLocation(program, GLSL_attributeName);
-    },
-
     // setupAttribBuffer()
-    // creates buffer, binds buffer, loads buffer data
-    // uses object that holds attribute objects
-    // uses "buffer" and "bufferData" inside attribute object
-    setupAttribBuffer: function(gl, attributeObj, drawOption)
+    // binds buffer, loads buffer data
+    setupAttribBuffer: function(gl, buffer, bufferData, drawOption)
     {
-        attributeObj.buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, attributeObj.buffer);    
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(attributeObj.bufferData), drawOption);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);    
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bufferData), drawOption);
     },
 
     // attribEnableBind()
-    // enables and binds attribute given attribute object with "location" & "buffer"
-    attribEnableBind: function(gl, attributeObj)
+    // enables attrib location given
+    // binds buffer given
+    attribEnableBind: function(gl, attributeLocationToEnable, bufferToBind)
     {
         // Enable Attributes
-        gl.enableVertexAttribArray(attributeObj.location);
+        gl.enableVertexAttribArray(attributeLocationToEnable);
         // Bind the position buffer.
-        gl.bindBuffer(gl.ARRAY_BUFFER, attributeObj.buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferToBind);
     },
 
 /**
