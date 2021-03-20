@@ -1,5 +1,5 @@
 // myWebGLHelper.js
-// version 2.0.0
+// version 2.1.0
 // author Casey Koepp
 // gl = WebGLRenderingContext object
 
@@ -104,6 +104,47 @@ const myWebGL =
         gl.enableVertexAttribArray(attributeLocationToEnable);
         // Bind the position buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, bufferToBind);
+    },
+
+    // run gl.vertexAttribPointer() with attribSettings object
+    // V = vertex (uses vSize)
+    vertexAttribPointerV: function(gl, attribute, attribSettings)
+    {
+        //gl.vertexAttribPointer(attribs.a_position, 
+        //    vSize, type, normalize, stride, offset);
+
+        gl.vertexAttribPointer(
+            attribute, 
+            attribSettings.vSize,
+            attribSettings.type,
+            attribSettings.normalize,
+            attribSettings.stride,
+            attribSettings.offset);
+    },
+
+    // run gl.vertexAttribPointer() with attribSettings object
+    // C = color (uses cSize)
+    vertexAttribPointerC: function(gl, attribute, attribSettings)
+    {
+        gl.vertexAttribPointer(
+            attribute, 
+            attribSettings.cSize,
+            attribSettings.type,
+            attribSettings.normalize,
+            attribSettings.stride,
+            attribSettings.offset);
+    },
+
+    // run gl.drawElements() with attribSettings object
+    drawElements: function(gl, attribSettings)
+    {
+        //gl.drawElements(primitiveType, count, indexType, drawOffset);
+
+        gl.drawElements(
+            attribSettings.primitiveType,
+            attribSettings.count,
+            attribSettings.indexType,
+            attribSettings.indexOffset);
     },
 
 /**
