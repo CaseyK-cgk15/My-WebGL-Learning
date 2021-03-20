@@ -31,6 +31,7 @@ const OPTIONS =
     varying vec4 v_color;
 
     uniform mat4 u_GLSLmatrix;
+    uniform mat4 u_isoMatrix;
     uniform mat4 u_transMatrix;
    
     // all shaders have a main function
@@ -39,7 +40,7 @@ const OPTIONS =
         v_color = a_color;
 
         // gl_Position is a special variable a vertex shader is responsible for setting
-        gl_Position = u_transMatrix * u_GLSLmatrix * a_position;
+        gl_Position =  u_isoMatrix * u_transMatrix * u_GLSLmatrix * a_position;
     }
 
     `
@@ -101,6 +102,18 @@ const OPTIONS =
     {
         colorDataGreen = colorDataGreen.concat(faceColors[2]);
     }
+
+    let colorDataBlue = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    {
+        colorDataBlue = colorDataBlue.concat(faceColors[3]);
+    }
+
+    let colorDataPurple = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    {
+        colorDataPurple = colorDataPurple.concat(faceColors[5]);
+    }
     
     const indices = myWebGLData.indexCube01;
 
@@ -125,6 +138,8 @@ const OPTIONS =
         color0: gl.createBuffer(),
         colorRed: gl.createBuffer(),
         colorGreen: gl.createBuffer(),
+        colorBlue: gl.createBuffer(),
+        colorPurple: gl.createBuffer(),
     };
 
 
@@ -135,16 +150,14 @@ const OPTIONS =
     myWebGL.setupAttribBuffer(gl, attribBuffers.color0, colorData, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorRed, colorDataRed, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorGreen, colorDataGreen, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorBlue, colorDataBlue, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorPurple, colorDataPurple, gl.STATIC_DRAW);
 
     // create the buffer
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-/*
-    const indexBuffer2 = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer2);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-*/
+
     /**
      * *********************************************
      *   ---= Matricies & Uniforms =---
@@ -155,21 +168,25 @@ const OPTIONS =
     const myMatrix = mat4.create(); // create identity matrix
 
     // transformations are done in reverse order of code
-    mat4.scale(myMatrix, myMatrix, [0.2, 0.2, 0.2]);
+    mat4.scale(myMatrix, myMatrix, [0.25, 0.25, 0.25]);
 
+    const isoMatrix = mat4.create();
     if (OPTIONS.Isometric_View)
     {
-        mat4.rotateZ(myMatrix, myMatrix, Math.PI/4);
-        mat4.rotateY(myMatrix, myMatrix, Math.PI/4);
-        mat4.rotateX(myMatrix, myMatrix, Math.PI/4);            
+        mat4.rotateZ(isoMatrix, isoMatrix, Math.PI/4);
+        mat4.rotateY(isoMatrix, isoMatrix, -Math.PI/4);
+        mat4.rotateX(isoMatrix, isoMatrix, Math.PI/4);            
     }
 
     let transMatrix = mat4.create(); 
 
+    let rectScale = mat4.create();
+
     const uniformLocations =
     {
         matrix: gl.getUniformLocation(program, "u_GLSLmatrix"),
-        transMatrix: gl.getUniformLocation(program, "u_transMatrix")
+        transMatrix: gl.getUniformLocation(program, "u_transMatrix"),
+        isoMatrix: gl.getUniformLocation(program, "u_isoMatrix"),
         
     };
 
@@ -203,22 +220,9 @@ const OPTIONS =
         let normalize = false; // don't normalize the data
         let stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
         let offset = 0;        // start at the beginning of the buffer
-
-        // position
-        myWebGL.attribEnableBind(gl, attribs.a_position, attribBuffers.positionCube);
-        // bind the buffer containing the indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-        // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        gl.vertexAttribPointer(attribs.a_position, 
-            vSize, type, normalize, stride, offset);
-
-        // color
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
-        gl.vertexAttribPointer(attribs.a_color,
-            cSize, type, normalize, stride, offset);
-
+        
         // Matrix Locations
+        gl.uniformMatrix4fv(uniformLocations.isoMatrix, false, isoMatrix);
         if (OPTIONS.Rotating)
         {
             mat4.rotateZ(myMatrix, myMatrix, Math.PI/2 /90);
@@ -239,28 +243,46 @@ const OPTIONS =
         gl.enable(gl.DEPTH_TEST);
         //gl.enable(gl.CULL_FACE);
 
+        // position
+        myWebGL.attribEnableBind(gl, attribs.a_position, attribBuffers.positionCube);
+        // bind the buffer containing the indices
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+        gl.vertexAttribPointer(attribs.a_position, 
+            vSize, type, normalize, stride, offset);
+
+        // center
+        // color
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
+        gl.vertexAttribPointer(attribs.a_color,
+            cSize, type, normalize, stride, offset);
+
+        transMatrix = mat4.create();
+        rectScale = mat4.create();
+        mat4.scale(rectScale, transMatrix, [1, 1, 2]);
+
+        gl.uniformMatrix4fv(uniformLocations.transMatrix, false, rectScale);
         gl.drawElements(primitiveType, count, indexType, drawOffset);
 
-        // color change 
+        // left 
         myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorGreen);
         gl.vertexAttribPointer(attribs.a_color,
             cSize, type, normalize, stride, offset);
-
-        mat4.translate(transMatrix, transMatrix, [0.5, 0, 0]);
+            
+        transMatrix = mat4.create();
+        mat4.translate(transMatrix, transMatrix, [-0.55, 0, 0]);
         gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
         gl.drawElements(primitiveType, count, indexType, 0);
 
-        // color change 
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorRed);
+        // right 
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorPurple);
         gl.vertexAttribPointer(attribs.a_color,
             cSize, type, normalize, stride, offset);
-            
 
         transMatrix = mat4.create();
-        mat4.translate(transMatrix, transMatrix, [-0.5, 0, 0]);
+        mat4.translate(transMatrix, transMatrix, [0.55, 0, 0]);
         gl.uniformMatrix4fv(uniformLocations.transMatrix, false, transMatrix);
         gl.drawElements(primitiveType, count, indexType, 0);
-
 
     };
 }
