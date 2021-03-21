@@ -1,3 +1,6 @@
+// main.js
+// 3D Isometric Robot
+// author Casey Koepp
 "use strict";
 
 const OPTIONS =
