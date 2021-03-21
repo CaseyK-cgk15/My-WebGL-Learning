@@ -287,7 +287,6 @@ function resizeCanvasToDisplaySize(canvas) {
 
     // Matrix & Transformations
     const myMatrix = mat4.create(); // create identity matrix
-    const transMatrix = mat4.create(); 
     const bodyScale = mat4.create();
     let finalMatrix = mat4.create();
 
@@ -296,9 +295,12 @@ function resizeCanvasToDisplaySize(canvas) {
 
     // transformations are done in reverse order of code
     mat4.translate(myMatrix, myMatrix, [0,0,-1]);
-    const scaleFactor = 0.25;
+    const scaleFactor = 0.15;
     mat4.scale(myMatrix, myMatrix, [scaleFactor, scaleFactor, scaleFactor]);
-    mat4.scale(bodyScale, bodyScale, [1, 2, 1]);
+
+    const bodyWidth = 2;
+    const bodyHeight = 3;
+    mat4.scale(bodyScale, bodyScale, [bodyWidth, bodyHeight, 1]);
 
     const isoMatrix = mat4.create();
     if (OPTIONS.Isometric_View)
@@ -405,36 +407,42 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.attribEnableBind(gl, attribs.a_normal, attribBuffers.normalCube);
         myWebGL.vertexAttribPointerV(gl, attribs.a_normal, attribSettings);
 
-        // center
         // color
         myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
         myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
 
+        // center (body)
         mat4.multiply(finalMatrix, bodyScale, myMatrix);
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
 
-        // left
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorRed);
-        myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
-
-        finalMatrix = mat4.create();
-        mat4.translate(finalMatrix, finalMatrix, [-2.1,0,0]);
+        // head
+        mat4.translate(finalMatrix, mat4.create(), [ 0, bodyHeight*3/2, 0]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
 
-        // right 
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorBlue);
-        myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
-
-        finalMatrix = mat4.create();
-        mat4.translate(finalMatrix, finalMatrix, [2.1,0,0]);
+        // neck
+        mat4.translate(finalMatrix, mat4.create(), [ 0, bodyHeight, 0]);
+        mat4.scale(finalMatrix, finalMatrix, [0.75,0.75,0.75]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
+        myWebGL.drawElements(gl, attribSettings);
+
+        // left shoulder
+        mat4.translate(finalMatrix, mat4.create(), [-(bodyWidth + 1.1), (bodyHeight*2/3), 0]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
+
+        // right shoulder
+        mat4.translate(finalMatrix, mat4.create(), [ (bodyWidth + 1.1), (bodyHeight*2/3), 0]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
     };
