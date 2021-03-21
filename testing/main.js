@@ -46,7 +46,7 @@ function resizeCanvasToDisplaySize(canvas) {
     `    
     precision mediump float;
 
-    const vec3 lightDirection = normalize(vec3(0.5, 0.7, 1.0));
+    const vec3 lightDirection = normalize(vec3(0.5, 0.5, 1.0));
     const float ambient = 0.2;
             
     // an attribute will receive data from a buffer
@@ -191,6 +191,10 @@ function resizeCanvasToDisplaySize(canvas) {
         colorData = colorData.concat(c, c, c, c);
     }
 
+    let colorDataDarkerGrey = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    { colorDataDarkerGrey = colorDataDarkerGrey.concat([0.1,  0.1,  0.1,  1.0]); }
+
     let colorDataGrey = [];
     for (let i = 0; i < faceColors.length*4; ++i)
     { colorDataGrey = colorDataGrey.concat(faceColors[0]); }
@@ -199,9 +203,17 @@ function resizeCanvasToDisplaySize(canvas) {
     for (let i = 0; i < faceColors.length*4; ++i)
     { colorDataRed = colorDataRed.concat(faceColors[1]); }
 
+    let colorDataDarkerGreen = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    { colorDataDarkerGreen = colorDataDarkerGreen.concat([0.0,  0.2,  0.0,  1.0]); }
+
     let colorDataGreen = [];
     for (let i = 0; i < faceColors.length*4; ++i)
     { colorDataGreen = colorDataGreen.concat(faceColors[2]); }
+
+    let colorDataDarkerBlue = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    { colorDataDarkerBlue = colorDataDarkerBlue.concat([0.0,  0.0,  0.3,  1.0]); }
 
     let colorDataBlue = [];
     for (let i = 0; i < faceColors.length*4; ++i)
@@ -253,24 +265,29 @@ function resizeCanvasToDisplaySize(canvas) {
         positionCube: gl.createBuffer(),
 
         color0: gl.createBuffer(),
+        colorDarkerGrey: gl.createBuffer(),
         colorGrey: gl.createBuffer(),
         colorRed: gl.createBuffer(),
+        colorDarkerGreen: gl.createBuffer(),
         colorGreen: gl.createBuffer(),
+        colorDarkerBlue: gl.createBuffer(),
         colorBlue: gl.createBuffer(),
         colorPurple: gl.createBuffer(),
 
         normalCube: gl.createBuffer(),
     };
 
-
     // position buffers
     myWebGL.setupAttribBuffer(gl, attribBuffers.positionCube, myWebGLData.vertexCube01, gl.STATIC_DRAW);
     
     // color buffers
     myWebGL.setupAttribBuffer(gl, attribBuffers.color0, colorData, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorDarkerGrey, colorDataDarkerGrey, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorGrey, colorDataGrey, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorRed, colorDataRed, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorDarkerGreen, colorDataDarkerGreen, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorGreen, colorDataGreen, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorDarkerBlue, colorDataDarkerBlue, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorBlue, colorDataBlue, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorPurple, colorDataPurple, gl.STATIC_DRAW);
 
@@ -281,6 +298,11 @@ function resizeCanvasToDisplaySize(canvas) {
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    const defaultColor = attribBuffers.color0;
+    const bodyColor = attribBuffers.colorDarkerGrey;
+    const eyeColor = attribBuffers.colorRed;
+    const mouthColor = attribBuffers.colorDarkerBlue;
 
     /**
      * *********************************************
@@ -410,8 +432,8 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.attribEnableBind(gl, attribs.a_normal, attribBuffers.normalCube);
         myWebGL.vertexAttribPointerV(gl, attribs.a_normal, attribSettings);
 
-        // color
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
+        // body color
+        myWebGL.attribEnableBind(gl, attribs.a_color, bodyColor);
         myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
 
         // center (body)
@@ -419,6 +441,10 @@ function resizeCanvasToDisplaySize(canvas) {
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
+
+                // body color
+                myWebGL.attribEnableBind(gl, attribs.a_color, defaultColor);
+                myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
 
         // head
         mat4.translate(finalMatrix, mat4.create(), [ 0, bodyHeight*3/2, 0]);
@@ -484,6 +510,39 @@ function resizeCanvasToDisplaySize(canvas) {
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
+
+        // eye color
+        myWebGL.attribEnableBind(gl, attribs.a_color, eyeColor);
+        myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
         
+        // left eye (right from Robot POV)
+        mat4.translate(finalMatrix, mat4.create(), [-0.5, bodyHeight*1.65, 1]);
+        mat4.scale(finalMatrix, finalMatrix, [0.3, 0.25, 0.25]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
+
+        // right eye (left from Robot POV)
+        mat4.translate(finalMatrix, mat4.create(), [0.5, bodyHeight*1.65, 1]);
+        mat4.scale(finalMatrix, finalMatrix, [0.3, 0.25, 0.25]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
+
+        // mouth color
+        myWebGL.attribEnableBind(gl, attribs.a_color, mouthColor);
+        myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
+
+        // mouth
+        mat4.translate(finalMatrix, mat4.create(), [0, bodyHeight*1.3, 0.85]);
+        mat4.scale(finalMatrix, finalMatrix, [0.5, 0.25, 0.25]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
+
+
     };
 }
