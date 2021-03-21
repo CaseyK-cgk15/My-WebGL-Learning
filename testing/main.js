@@ -315,7 +315,7 @@ function resizeCanvasToDisplaySize(canvas) {
     }
 
     const viewMatrix = mat4.create();
-    mat4.translate(viewMatrix, viewMatrix, [-1, 2, 0.5]);
+    mat4.translate(viewMatrix, viewMatrix, [-1, 1.5, 0.5]);
     mat4.invert(viewMatrix, viewMatrix);
 
     const perspectiveMatrix = mat4.create();
@@ -432,18 +432,19 @@ function resizeCanvasToDisplaySize(canvas) {
 
         myWebGL.drawElements(gl, attribSettings);
 
-        // left shoulder
+        // left shoulder (right from Robot POV)
         mat4.translate(finalMatrix, mat4.create(), [-(bodyWidth + 1.1), (bodyHeight*2/3), 0]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
 
-        // right shoulder
+        // right shoulder (left from Robot POV)
         mat4.translate(finalMatrix, mat4.create(), [ (bodyWidth + 1.1), (bodyHeight*2/3), 0]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
         myWebGL.drawElements(gl, attribSettings);
+        
     };
 }
