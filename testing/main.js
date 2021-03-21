@@ -447,7 +447,7 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.drawElements(gl, attribSettings);
 
         // left leg (right from Robot POV)
-        mat4.translate(finalMatrix, mat4.create(), [ -1, -bodyHeight*4/3, 0]);
+        mat4.translate(finalMatrix, mat4.create(), [ -1, -bodyHeight*1.8, 0]);
         mat4.scale(finalMatrix, finalMatrix, [0.80, 0.80, 0.80]);
         mat4.scale(finalMatrix, finalMatrix, [1, bodyHeight, 1]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
@@ -456,13 +456,31 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.drawElements(gl, attribSettings);
 
         // right leg (left from Robot POV)
-        mat4.translate(finalMatrix, mat4.create(), [ 1, -bodyHeight*4/3, 0]);
+        mat4.translate(finalMatrix, mat4.create(), [ 1, -bodyHeight*1.8, 0]);
         mat4.scale(finalMatrix, finalMatrix, [0.80, 0.80, 0.80]);
         mat4.scale(finalMatrix, finalMatrix, [1, bodyHeight, 1]);
         mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
         gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
 
-        myWebGL.drawElements(gl, attribSettings);       
+        myWebGL.drawElements(gl, attribSettings);
+        
+        // left arm (right from Robot POV)
+        mat4.translate(finalMatrix, mat4.create(), [-(bodyWidth + 1.1), 0, 0]);
+        mat4.scale(finalMatrix, finalMatrix, [0.75, 0.75, 0.75]);
+        mat4.scale(finalMatrix, finalMatrix, [1, bodyHeight, 1]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
+
+        // right arm (left from Robot POV)
+        mat4.translate(finalMatrix, mat4.create(), [ (bodyWidth + 1.1), 0, 0]);
+        mat4.scale(finalMatrix, finalMatrix, [0.75, 0.75, 0.75]);
+        mat4.scale(finalMatrix, finalMatrix, [1, bodyHeight, 1]);
+        mat4.multiply(finalMatrix, myMatrix, finalMatrix); //scale down
+        gl.uniformMatrix4fv(uniformLocations.u_modelMatrix, false, finalMatrix);
+
+        myWebGL.drawElements(gl, attribSettings);
         
     };
 }
