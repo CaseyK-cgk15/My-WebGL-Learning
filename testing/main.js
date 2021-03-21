@@ -42,24 +42,96 @@ function resizeCanvasToDisplaySize(canvas) {
     const vertexShaderSourceCode = 
     `    
     precision mediump float;
+
+    const vec3 lightDirection = normalize(vec3(0.5, 0.7, 1.0));
+    const float ambient = 0.2;
             
     // an attribute will receive data from a buffer
     attribute vec3 a_position;
     attribute vec4 a_color;
+    attribute vec3 a_normal;
 
     varying vec4 v_color;
+    varying float v_brightness;
 
     uniform mat4 u_GLSLmatrix;
     uniform mat4 u_projectionMatrix;
     uniform mat4 u_viewMatrix;
+
+    // inverse function
+    mat4 inverse(mat4 m) {
+        float
+            a00 = m[0][0], a01 = m[0][1], a02 = m[0][2], a03 = m[0][3],
+            a10 = m[1][0], a11 = m[1][1], a12 = m[1][2], a13 = m[1][3],
+            a20 = m[2][0], a21 = m[2][1], a22 = m[2][2], a23 = m[2][3],
+            a30 = m[3][0], a31 = m[3][1], a32 = m[3][2], a33 = m[3][3],
+      
+            b00 = a00 * a11 - a01 * a10,
+            b01 = a00 * a12 - a02 * a10,
+            b02 = a00 * a13 - a03 * a10,
+            b03 = a01 * a12 - a02 * a11,
+            b04 = a01 * a13 - a03 * a11,
+            b05 = a02 * a13 - a03 * a12,
+            b06 = a20 * a31 - a21 * a30,
+            b07 = a20 * a32 - a22 * a30,
+            b08 = a20 * a33 - a23 * a30,
+            b09 = a21 * a32 - a22 * a31,
+            b10 = a21 * a33 - a23 * a31,
+            b11 = a22 * a33 - a23 * a32,
+      
+            det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+      
+        return mat4(
+            a11 * b11 - a12 * b10 + a13 * b09,
+            a02 * b10 - a01 * b11 - a03 * b09,
+            a31 * b05 - a32 * b04 + a33 * b03,
+            a22 * b04 - a21 * b05 - a23 * b03,
+            a12 * b08 - a10 * b11 - a13 * b07,
+            a00 * b11 - a02 * b08 + a03 * b07,
+            a32 * b02 - a30 * b05 - a33 * b01,
+            a20 * b05 - a22 * b02 + a23 * b01,
+            a10 * b10 - a11 * b08 + a13 * b06,
+            a01 * b08 - a00 * b10 - a03 * b06,
+            a30 * b04 - a31 * b02 + a33 * b00,
+            a21 * b02 - a20 * b04 - a23 * b00,
+            a11 * b07 - a10 * b09 - a12 * b06,
+            a00 * b09 - a01 * b07 + a02 * b06,
+            a31 * b01 - a30 * b03 - a32 * b00,
+            a20 * b03 - a21 * b01 + a22 * b00) / det;
+      }
+
+    mat4 transpose(in mat4 inMatrix) {
+        vec4 i0 = inMatrix[0];
+        vec4 i1 = inMatrix[1];
+        vec4 i2 = inMatrix[2];
+        vec4 i3 = inMatrix[3];
+    
+        mat4 outMatrix = mat4(
+                     vec4(i0.x, i1.x, i2.x, i3.x),
+                     vec4(i0.y, i1.y, i2.y, i3.y),
+                     vec4(i0.z, i1.z, i2.z, i3.z),
+                     vec4(i0.w, i1.w, i2.w, i3.w)
+                     );
+    
+        return outMatrix;
+    }
    
     // all shaders have a main function
     void main() {
+        mat4 mvMatrix = u_viewMatrix * u_GLSLmatrix;
+        mat4 mvpMatrix = u_projectionMatrix * mvMatrix;
+
+        mat4 normalMatrix = inverse(mvMatrix);
+        normalMatrix = transpose(normalMatrix);
+        
+        vec3 worldNormal = normalize((normalMatrix * vec4(a_normal, 1.0)).xyz);
+        float diffuse = max(0.0, dot(worldNormal, lightDirection));
        
         v_color = a_color;
+        v_brightness = diffuse + ambient;
 
         // gl_Position is a special variable a vertex shader is responsible for setting
-        gl_Position =  u_projectionMatrix * u_viewMatrix * u_GLSLmatrix * vec4(a_position, 1);
+        gl_Position =  mvpMatrix * vec4(a_position, 1);
     }
 
     `
@@ -72,11 +144,16 @@ function resizeCanvasToDisplaySize(canvas) {
     precision mediump float;
 
     varying vec4 v_color;
+    varying float v_brightness;
    
     void main() {
-      
-      // gl_FragColor is a special variable a fragment shader is responsible for setting
-      gl_FragColor = v_color;
+        //vec4 texel = texture2d(textureID, vUV);
+        //texel.xyz * v_brightness;
+        vec4 pixel = v_color;
+        pixel.xyz *= v_brightness;
+
+        // gl_FragColor is a special variable a fragment shader is responsible for setting
+        gl_FragColor = pixel;
     }
    
     `
@@ -88,7 +165,8 @@ function resizeCanvasToDisplaySize(canvas) {
      *             ---=    Data     =---
      * *********************************************
      */
-      
+    
+    // F|Ba|T|Bo|R|L
     const faceColors = [
         [0.2,  0.2,  0.2,  1.0],    // Front face: grey
         [1.0,  0.0,  0.0,  1.0],    // Back face: red
@@ -110,31 +188,46 @@ function resizeCanvasToDisplaySize(canvas) {
         colorData = colorData.concat(c, c, c, c);
     }
 
+    let colorDataGrey = [];
+    for (let i = 0; i < faceColors.length*4; ++i)
+    { colorDataGrey = colorDataGrey.concat(faceColors[0]); }
+
     let colorDataRed = [];
     for (let i = 0; i < faceColors.length*4; ++i)
-    {
-        colorDataRed = colorDataRed.concat(faceColors[1]);
-    }
+    { colorDataRed = colorDataRed.concat(faceColors[1]); }
 
     let colorDataGreen = [];
     for (let i = 0; i < faceColors.length*4; ++i)
-    {
-        colorDataGreen = colorDataGreen.concat(faceColors[2]);
-    }
+    { colorDataGreen = colorDataGreen.concat(faceColors[2]); }
 
     let colorDataBlue = [];
     for (let i = 0; i < faceColors.length*4; ++i)
-    {
-        colorDataBlue = colorDataBlue.concat(faceColors[3]);
-    }
+    { colorDataBlue = colorDataBlue.concat(faceColors[3]); }
 
     let colorDataPurple = [];
     for (let i = 0; i < faceColors.length*4; ++i)
-    {
-        colorDataPurple = colorDataPurple.concat(faceColors[5]);
-    }
+    { colorDataPurple = colorDataPurple.concat(faceColors[5]); }
     
     const indices = myWebGLData.indexCube01;
+
+    // F|Ba|T|Bo|R|L
+    const faceNormals = [
+        [ 0, 0, 1],    // Front face: +Z
+        [ 0, 0,-1],    // Back face: -Z
+        [ 0, 1, 0],    // Top face: +Y
+        [ 0,-1, 0],    // Bottom face: -Y
+        [ 1, 0, 0],    // Right face: +X
+        [-1, 0, 0],    // Left face: -X
+    ];
+    let normalData = [];
+    // F|Ba|T|Bo|R|L
+    for (var j = 0; j < faceNormals.length*4; ++j)
+    {
+        const c = faceNormals[j];
+
+        // Repeat each normal vector four times for the four vertices of the face
+        normalData = normalData.concat(c, c, c, c);
+    }
 
     /**
      * *********************************************
@@ -149,16 +242,21 @@ function resizeCanvasToDisplaySize(canvas) {
     {
         a_position: gl.getAttribLocation(program, "a_position"),
         a_color: gl.getAttribLocation(program, "a_color"),
+        a_normal: gl.getAttribLocation(program, "a_normal"),
     };
     // holds buffers
     let attribBuffers =
     {
         positionCube: gl.createBuffer(),
+
         color0: gl.createBuffer(),
+        colorGrey: gl.createBuffer(),
         colorRed: gl.createBuffer(),
         colorGreen: gl.createBuffer(),
         colorBlue: gl.createBuffer(),
         colorPurple: gl.createBuffer(),
+
+        normalCube: gl.createBuffer(),
     };
 
 
@@ -167,12 +265,16 @@ function resizeCanvasToDisplaySize(canvas) {
     
     // color buffers
     myWebGL.setupAttribBuffer(gl, attribBuffers.color0, colorData, gl.STATIC_DRAW);
+    myWebGL.setupAttribBuffer(gl, attribBuffers.colorGrey, colorDataGrey, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorRed, colorDataRed, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorGreen, colorDataGreen, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorBlue, colorDataBlue, gl.STATIC_DRAW);
     myWebGL.setupAttribBuffer(gl, attribBuffers.colorPurple, colorDataPurple, gl.STATIC_DRAW);
 
-    // create the buffer
+    // normal buff
+    myWebGL.setupAttribBuffer(gl, attribBuffers.normalCube, normalData, gl.STATIC_DRAW);
+
+    // index buffer
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
@@ -231,7 +333,7 @@ function resizeCanvasToDisplaySize(canvas) {
         u_modelMatrix: gl.getUniformLocation(program, "u_GLSLmatrix"),
         u_transMatrix: gl.getUniformLocation(program, "u_transMatrix"),
         u_projectionMatrix: gl.getUniformLocation(program, "u_projectionMatrix"),
-        u_viewMatrix: gl.getUniformLocation(program, "u_viewMatrix")
+        u_viewMatrix: gl.getUniformLocation(program, "u_viewMatrix"),
         
     };
 
@@ -299,6 +401,10 @@ function resizeCanvasToDisplaySize(canvas) {
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer); // bind the buffer containing the indices
         myWebGL.vertexAttribPointerV(gl, attribs.a_position, attribSettings); // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
 
+        // normals
+        myWebGL.attribEnableBind(gl, attribs.a_normal, attribBuffers.normalCube);
+        myWebGL.vertexAttribPointerV(gl, attribs.a_normal, attribSettings);
+
         // center
         // color
         myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
@@ -310,7 +416,7 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.drawElements(gl, attribSettings);
 
         // left
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorRed);
         myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
 
         finalMatrix = mat4.create();
@@ -321,7 +427,7 @@ function resizeCanvasToDisplaySize(canvas) {
         myWebGL.drawElements(gl, attribSettings);
 
         // right 
-        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.color0);
+        myWebGL.attribEnableBind(gl, attribs.a_color, attribBuffers.colorBlue);
         myWebGL.vertexAttribPointerC(gl, attribs.a_color, attribSettings);
 
         finalMatrix = mat4.create();
