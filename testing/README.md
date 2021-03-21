@@ -44,7 +44,7 @@ in order to make use of this properly, a number of things bust be changed
 
 
 ## Files
-- Multicolor3DBox.html - Basic HTML file
+- Robot.html - Basic HTML file
 - main.css - Basic CSS file for canvas border
 - main.js - JavaScript WebGL program
 - myWebGLHelper.js - functions to handle creating shaders and program (given source code), along with other various utilities
